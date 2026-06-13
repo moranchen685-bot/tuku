@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .wechat-container {
+            width: 900px;
+            height: 600px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 左侧信息栏 */
+        .sidebar {
+            width: 280px;
+            background: #2e2e2e;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+        }
+
+        .user-info {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .user-name {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .search-box {
+            padding: 10px 15px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: none;
+            background: #3a3a3a;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #888;
+        }
+
+        .contact-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .contact-item:hover {
+            background: #3a3a3a;
+        }
+
+        .contact-item.active {
+            background: #3a3a3a;
+        }
+
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .contact-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .contact-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .contact-preview {
+            font-size: 12px;
+            color: #999;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .add-contact-btn {
+            padding: 12px 15px;
+            text-align: center;
+            cursor: pointer;
+            color: #07c160;
+            font-size: 14px;
+            border-top: 1px solid #3a3a3a;
+            transition: background 0.2s;
+        }
+
+        .add-contact-btn:hover {
+            background: #3a3a3a;
+        }
+
+        /* 右侧聊天窗口 */
+        .chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .chat-header-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .chat-header-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .welcome-message h3 {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .welcome-message p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .message.self {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .message-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .message-content {
+            max-width: 60%;
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            margin: 0 10px;
+        }
+
+        .message.self .message-content {
+            background: #95ec69;
+            color: #333;
+        }
+
+        .message.other .message-content {
+            background: #fff;
+            color: #333;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .chat-input-area {
+            padding: 15px 20px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: #07c160;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: #07c160;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #06ad56;
+        }
+
+        .send-btn:active {
+            background: #059a4c;
+        }
+
+        /* 添加联系人弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            width: 350px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .modal input:focus {
+            border-color: #07c160;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-btn.confirm {
+            background: #07c160;
+            color: #fff;
+        }
+
+        .modal-btn.confirm:hover {
+            background: #06ad56;
+        }
+
+        /* 头像选择器 */
+        .avatar-picker {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1001;
+            max-width: 300px;
+        }
+
+        .avatar-picker.show {
+            display: block;
+        }
+
+        .avatar-picker h4 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .avatar-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .avatar-option:hover {
+            transform: scale(1.2);
+            background: #06ad56;
+        }
+
+        .avatar-picker-close {
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .avatar-picker-close:hover {
+            color: #666;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+        }
+
+        .typing-indicator .message-avatar {
+            margin-right: 10px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="wechat-container">
+        <!-- 左侧信息栏 -->
+        <div class="sidebar">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar" onclick="openAvatarPicker('user')">😊</div>
+                <div class="user-name">我的微信</div>
+                <div class="user-id">微信号: me123</div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索联系人..." oninput="searchContacts()">
+            </div>
+
+            <div class="contact-list" id="contactList">
+                <div class="contact-item" data-name="小明" onclick="selectContact('小明')">
+                    <div class="contact-avatar">👦</div>
+                    <div class="contact-info">
+                        <div class="contact-name">小明</div>
+                        <div class="contact-preview" id="preview-小明">点击开始聊天</div>
+                    </div>
+                </div>
+                <div class="contact-item" data-name="小红" onclick="selectContact('小红')">
+                    <div class="contact-avatar">👧</div>
+                    <div class="contact-info">
+                        <div class="contact-name">小红</div>
+                        <div class="contact-preview" id="preview-小红">点击开始聊天</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-contact-btn" onclick="openAddContactModal()">
+                + 添加新朋友
+            </div>
+        </div>
+
+        <!-- 右侧聊天窗口 -->
+        <div class="chat-window">
+            <div class="chat-header">
+                <div class="chat-header-title" id="chatTitle">欢迎使用微信模拟器</div>
+                <div class="chat-header-avatar" id="chatHeaderAvatar" onclick="openAvatarPicker('current')" style="display:none;">😊</div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message" id="welcomeMessage">
+                    <h3>👋 欢迎使用微信模拟器</h3>
+                    <p>点击左侧联系人开始聊天<br>您可以添加新朋友，智能AI会根据关键词自动回复消息<br>点击头像可以更换表情符号</p>
+                </div>
+
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar" id="typingAvatar">👦</div>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area" id="chatInputArea" style="display:none;">
+                <input type="text" class="chat-input" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加联系人弹窗 -->
+    <div class="modal-overlay" id="addContactModal">
+        <div class="modal">
+            <h3>添加新朋友</h3>
+            <input type="text" id="newContactName" placeholder="请输入联系人名称">
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeAddContactModal()">取消</button>
+                <button class="modal-btn confirm" onclick="addContact()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 头像选择器 -->
+    <div class="avatar-picker" id="avatarPicker">
+        <h4>选择头像</h4>
+        <div class="avatar-grid" id="avatarGrid"></div>
+        <div class="avatar-picker-close" onclick="closeAvatarPicker()">关闭</div>
+    </div>
+
+    <script>
+        // 数据存储
+        const avatars = ['😊', '😎', '🤔', '😍', '🥳', '😂', '🤗', '😴', '🤓', '🥰', '😋', '🤪', '😇', '🤠', '🥸', '😷', '🤢', '🤡', '👻', '👽', '🤖', '💩', '👍', '👎', '👏', '👋', '✌️', '🤟', '🤘', '🤙'];
+
+        let contacts = {
+            '小明': { avatar: '👦', messages: [] },
+            '小红': { avatar: '👧', messages: [] }
+        };
+
+        let currentContact = null;
+        let userAvatar = '😊';
+        let avatarPickerTarget = null;
+
+        // AI回复关键词
+        const aiResponses = {
+            '你好': '你好呀！很高兴见到你 😊',
+            '嗨': '嗨！最近怎么样？',
+            'hello': 'Hello! 有什么我可以帮你的吗？',
+            'hi': 'Hi there! 👋',
+            '在吗': '在的！有什么想聊的吗？',
+            '吃了吗': '还没呢，你呢？要不要一起吃点什么？',
+            '天气': '今天天气不错，适合出去走走！',
+            '工作': '工作加油！记得适当休息哦 💪',
+            '学习': '学习使人进步！有什么不懂的可以问我 📚',
+            '游戏': '你喜欢玩什么游戏？我最近也在玩呢 🎮',
+            '电影': '最近有什么好看的电影推荐吗？🎬',
+            '音乐': '音乐是灵魂的粮食！你喜欢听什么类型的？🎵',
+            '笑话': '为什么程序员总是分不清圣诞节和万圣节？因为 Oct 31 == Dec 25！😄',
+            '谢谢': '不客气！随时为你效劳 😊',
+            '再见': '再见！有空再聊 👋',
+            '拜拜': '拜拜！保重！',
+            '晚安': '晚安！做个好梦 🌙',
+            '早安': '早安！新的一天要元气满满哦 ☀️',
+            '生日': '生日快乐！祝你天天开心 🎂',
+            '难过': '别难过，一切都会好起来的。需要聊聊吗？',
+            '开心': '看到你开心我也很开心！😄',
+            '累': '辛苦了！记得好好休息 💤',
+            '忙': '忙完这阵记得放松一下自己哦',
+            '无聊': '无聊的话可以看看书、听听音乐，或者找我聊天呀！',
+            '想你了': '我也想你了！什么时候见面？',
+            '爱你': '我也爱你！❤️',
+            '喜欢': '喜欢什么？说来听听！',
+            '讨厌': '别讨厌啦，换个心情会好很多的',
+            '帮助': '我可以帮你解答问题、陪你聊天，或者给你一些建议！',
+            '时间': '珍惜当下的每一刻！⏰',
+            '钱': '钱不是万能的，但没钱是万万不能的 😅',
+            '健康': '健康最重要！记得多运动、多喝水 💪',
+            '梦想': '有梦想就去追！加油！🌟',
+            '未来': '未来可期！相信自己 ✨',
+            '过去': '过去的就让它过去吧，向前看！',
+            '现在': '活在当下，享受每一刻！',
+            '朋友': '朋友是人生的财富！珍惜身边的每一个人',
+            '家人': '家人永远是最坚实的后盾 💕',
+            '爱情': '爱情很美好，但也要好好爱自己哦',
+            '旅行': '世界那么大，我想去看看！✈️',
+            '美食': '说到美食我就饿了！推荐几家好吃的店？🍜',
+            '运动': '运动使人快乐！一起动起来吧 🏃',
+            '读书': '书中自有黄金屋！最近在读什么书？📖',
+            '编程': '编程改变世界！你是做什么方向的？💻',
+            '代码': '代码写得好，bug 少烦恼！',
+            'bug': 'bug 是程序员的日常，修完就成长了！',
+            '微信': '这是一个微信模拟器，体验还不错吧？',
+            '模拟器': '是的！这是一个模拟微信聊天的网页应用',
+            'AI': '我是智能AI助手，会根据你的消息自动回复！',
+            '智能': '我会尽力理解你的意思并给出合适的回复',
+            '机器人': '我是AI机器人，但我会用心和你交流的！🤖'
+        };
+
+        const defaultResponses = [
+            '有意思！继续说',
+            '我明白了',
+            '真的吗？',
+            '听起来不错！',
+            '嗯嗯',
+            '这样啊',
+            '了解了',
+            '哈哈',
+            '确实',
+            '你说得对'
+        ];
+
+        // 初始化头像选择器
+        function initAvatarPicker() {
+            const grid = document.getElementById('avatarGrid');
+            grid.innerHTML = '';
+            avatars.forEach(avatar => {
+                const div = document.createElement('div');
+                div.className = 'avatar-option';
+                div.textContent = avatar;
+                div.onclick = () => selectAvatar(avatar);
+                grid.appendChild(div);
+            });
+        }
+
+        // 打开头像选择器
+        function openAvatarPicker(target) {
+            avatarPickerTarget = target;
+            document.getElementById('avatarPicker').classList.add('show');
+        }
+
+        // 关闭头像选择器
+        function closeAvatarPicker() {
+            document.getElementById('avatarPicker').classList.remove('show');
+            avatarPickerTarget = null;
+        }
+
+        // 选择头像
+        function selectAvatar(avatar) {
+            if (avatarPickerTarget === 'user') {
+                userAvatar = avatar;
+                document.getElementById('userAvatar').textContent = avatar;
+            } else if (avatarPickerTarget === 'current' && currentContact) {
+                contacts[currentContact].avatar = avatar;
+                updateContactAvatar(currentContact, avatar);
+                document.getElementById('chatHeaderAvatar').textContent = avatar;
+                document.getElementById('typingAvatar').textContent = avatar;
+                refreshMessages();
+            }
+            closeAvatarPicker();
+        }
+
+        // 更新联系人头像
+        function updateContactAvatar(name, avatar) {
+            const contactItems = document.querySelectorAll('.contact-item');
+            contactItems.forEach(item => {
+                if (item.dataset.name === name) {
+                    item.querySelector('.contact-avatar').textContent = avatar;
+                }
+            });
+        }
+
+        // 选择联系人
+        function selectContact(name) {
+            currentContact = name;
+
+            // 更新选中状态
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.name === name) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 更新聊天窗口
+            document.getElementById('chatTitle').textContent = name;
+            document.getElementById('chatHeaderAvatar').textContent = contacts[name].avatar;
+            document.getElementById('chatHeaderAvatar').style.display = 'flex';
+            document.getElementById('welcomeMessage').style.display = 'none';
+            document.getElementById('chatInputArea').style.display = 'flex';
+            document.getElementById('typingAvatar').textContent = contacts[name].avatar;
+
+            refreshMessages();
+            document.getElementById('messageInput').focus();
+        }
+
+        // 刷新消息列表
+        function refreshMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            const typingIndicator = document.getElementById('typingIndicator');
+
+            // 清除旧消息（保留欢迎消息和打字指示器）
+            const oldMessages = chatMessages.querySelectorAll('.message');
+            oldMessages.forEach(msg => msg.remove());
+
+            if (currentContact && contacts[currentContact]) {
+                contacts[currentContact].messages.forEach(msg => {
+                    const messageDiv = createMessageElement(msg.text, msg.isSelf, msg.avatar);
+                    chatMessages.insertBefore(messageDiv, typingIndicator);
+                });
+            }
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 创建消息元素
+        function createMessageElement(text, isSelf, avatar) {
+            const div = document.createElement('div');
+            div.className = `message ${isSelf ? 'self' : 'other'}`;
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            return div;
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text || !currentContact) return;
+
+            // 添加用户消息
+            contacts[currentContact].messages.push({
+                text: text,
+                isSelf: true,
+                avatar: userAvatar
+            });
+
+            input.value = '';
+            refreshMessages();
+            updatePreview(currentContact, text);
+
+            // 显示AI正在输入
+            showTypingIndicator();
+
+            // AI回复
+            setTimeout(() => {
+                hideTypingIndicator();
+                const response = generateAIResponse(text);
+                contacts[currentContact].messages.push({
+                    text: response,
+                    isSelf: false,
+                    avatar: contacts[currentContact].avatar
+                });
+                refreshMessages();
+                updatePreview(currentContact, response);
+            }, 1500 + Math.random() * 1000);
+        }
+
+        // 显示打字指示器
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('show');
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+
+        // 生成AI回复
+        function generateAIResponse(text) {
+            const lowerText = text.toLowerCase();
+
+            for (const [keyword, response] of Object.entries(aiResponses)) {
+                if (lowerText.includes(keyword)) {
+                    return response;
+                }
+            }
+
+            // 随机默认回复
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        // 更新预览
+        function updatePreview(name, text) {
+            const preview = document.getElementById(`preview-${name}`);
+            if (preview) {
+                preview.textContent = text.length > 15 ? text.substring(0, 15) + '...' : text;
+            }
+        }
+
+        // 处理键盘事件
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 搜索联系人
+        function searchContacts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const contactItems = document.querySelectorAll('.contact-item');
+
+            contactItems.forEach(item => {
+                const name = item.dataset.name.toLowerCase();
+                if (name.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // 打开添加联系人弹窗
+        function openAddContactModal() {
+            document.getElementById('addContactModal').classList.add('show');
+            document.getElementById('newContactName').value = '';
+            document.getElementById('newContactName').focus();
+        }
+
+        // 关闭添加联系人弹窗
+        function closeAddContactModal() {
+            document.getElementById('addContactModal').classList.remove('show');
+        }
+
+        // 添加联系人
+        function addContact() {
+            const name = document.getElementById('newContactName').value.trim();
+
+            if (!name) {
+                alert('请输入联系人名称');
+                return;
+            }
+
+            if (contacts[name]) {
+                alert('该联系人已存在');
+                return;
+            }
+
+            // 随机分配头像
+            const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+            contacts[name] = { avatar: randomAvatar, messages: [] };
+
+            // 添加到列表
+            const contactList = document.getElementById('contactList');
+            const contactItem = document.createElement('div');
+            contactItem.className = 'contact-item';
+            contactItem.dataset.name = name;
+            contactItem.onclick = () => selectContact(name);
+            contactItem.innerHTML = `
+                <div class="contact-avatar">${randomAvatar}</div>
+                <div class="contact-info">
+                    <div class="contact-name">${name}</div>
+                    <div class="contact-preview" id="preview-${name}">点击开始聊天</div>
+                </div>
+            `;
+            contactList.appendChild(contactItem);
+
+            closeAddContactModal();
+            selectContact(name);
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('addContactModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddContactModal();
+            }
+        });
+
+        // 初始化
+        initAvatarPicker();
+    </script>
+</body>
+</html>
